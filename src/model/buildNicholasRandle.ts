@@ -292,22 +292,29 @@ function buildHeadGeometry(): THREE.BufferGeometry {
  * Острый низкополигональный нос-призма, посаженный НА плоскость лица.
  * Кончик выступает всего на ~12 мм — без «хобота». UV сохранены.
  */
+/**
+ * Острый треугольный нос, посаженный на уплощённое лицо.
+ * Основание утоплено в голову, кончик не выступает дальше чёлки.
+ */
 function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
 
-  const BTop = [0.0, 0.03, 0.0955];
-  const BLeft = [-0.0085, 0.024, 0.093];
-  const BRight = [0.0085, 0.024, 0.093];
-  const Tip = [0.0, -0.02, 0.1035];
-  const WingL = [-0.0115, -0.0245, 0.0905];
-  const WingR = [0.0115, -0.0245, 0.0905];
-  const Base = [0.0, -0.0315, 0.09];
+  const BTop = [0.0, 0.032, 0.082];
+  const BLeft = [-0.009, 0.026, 0.078];
+  const BRight = [0.009, 0.026, 0.078];
+  const Tip = [0.0, -0.022, 0.099];
+  const WingL = [-0.013, -0.025, 0.078];
+  const WingR = [0.013, -0.025, 0.078];
+  const Base = [0.0, -0.033, 0.080];
 
   const positions = new Float32Array([
+    // Левая стенка
     ...BTop, ...BLeft, ...Tip,
     ...BLeft, ...WingL, ...Tip,
+    // Правая стенка
     ...BTop, ...Tip, ...BRight,
     ...BRight, ...Tip, ...WingR,
+    // Низ / ноздри
     ...Tip, ...WingL, ...Base,
     ...Tip, ...Base, ...WingR,
   ]);
@@ -326,7 +333,6 @@ function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   geo.computeVertexNormals();
   return geo;
 }
-
 /**
  * Multi-layered Charcoal-Black (#121214) Sharp Triangular Hair Strands & Asymmetric Bangs
  * Partially covering one eye (covers character's right eye, leaving left eye & mole exposed)
