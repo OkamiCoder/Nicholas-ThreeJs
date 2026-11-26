@@ -236,8 +236,8 @@ function buildHeadGeometry(): THREE.BufferGeometry {
       const cheekYFactor = 1.0 - Math.abs(ny + 0.26) / 0.32;
       const cheekXFactor = 1.0 - Math.abs(Math.abs(nx) - 0.54) / 0.34;
       const hollowAmount = Math.max(0, cheekYFactor) * Math.max(0, cheekXFactor);
-      x *= 1.0 - hollowAmount * 0.6;
-      z -= hollowAmount * 0.006;
+      x *= 1.0 - hollowAmount * 0.3;
+      z -= hollowAmount * 0.003;
     }
 
     // 6. Скулы.
@@ -472,6 +472,7 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
 
   // Слой 3: макушка, бока и затылок — растрёпанные шипы
   const perimeterSpikes = 14;
+  const SPIKE_OUTWARD = 0.014; // насколько выдвинуть все периметральные пряди наружу
   for (let i = 0; i < perimeterSpikes; i++) {
     const angle = (i / perimeterSpikes) * Math.PI * 1.45 + Math.PI * 0.78;
     const sinA = Math.sin(angle);
@@ -479,45 +480,40 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
     const tangent: [number, number, number] = [cosA, 0, -sinA];
 
     addTriangularStrand(
-      [sinA * 0.042, 0.118, cosA * 0.052 - 0.006],
-      [sinA * 0.078, 0.064, cosA * 0.094 - 0.01],
-      [sinA * 0.084, -0.005 - (i % 3) * 0.014, cosA * 0.102 - 0.012],
+      [sinA * (0.042 + SPIKE_OUTWARD), 0.118, cosA * (0.052 + SPIKE_OUTWARD) - 0.006],
+      [sinA * (0.078 + SPIKE_OUTWARD), 0.064, cosA * (0.094 + SPIKE_OUTWARD) - 0.01],
+      [sinA * (0.084 + SPIKE_OUTWARD), -0.005 - (i % 3) * 0.014, cosA * (0.102 + SPIKE_OUTWARD) - 0.012],
       0.024,
       0.017,
       tangent
     );
 
     addTriangularStrand(
-      [sinA * 0.062, 0.055, cosA * 0.076 - 0.008],
-      [sinA * 0.076, -0.008, cosA * 0.096 - 0.012],
-      [sinA * 0.072, -0.065 - (i % 2) * 0.015, cosA * 0.094 - 0.015],
+      [sinA * (0.062 + SPIKE_OUTWARD), 0.055, cosA * (0.076 + SPIKE_OUTWARD) - 0.008],
+      [sinA * (0.076 + SPIKE_OUTWARD), -0.008, cosA * (0.096 + SPIKE_OUTWARD) - 0.012],
+      [sinA * (0.072 + SPIKE_OUTWARD), -0.065 - (i % 2) * 0.015, cosA * (0.094 + SPIKE_OUTWARD) - 0.015],
       0.021,
       0.014,
       tangent
     );
   }
-
-  // Верхние растрёпанные пучки
+  // Верхние растрёпанные пучки (выдвинуты наружу на +0.014 вдоль своего направления)
   addTriangularStrand(
-    [-0.01, 0.122, -0.01],
-    [-0.035, 0.134, 0.025],
-    [-0.052, 0.118, 0.055],
+    [-0.024, 0.122, -0.024],
+    [-0.049, 0.134, 0.011],
+    [-0.066, 0.118, 0.041],
     0.022,
     0.014,
     [0.4, 0.2, 0.88]
   );
   addTriangularStrand(
-    [0.015, 0.122, -0.02],
-    [0.038, 0.132, -0.05],
-    [0.05, 0.108, -0.085],
+    [0.029, 0.122, -0.034],
+    [0.052, 0.132, -0.064],
+    [0.064, 0.108, -0.099],
     0.022,
     0.014,
     [0.85, 0.1, -0.5]
   );
-
-  return hairGroup;
-}
-
 /**
  * 2. TORSO & BAGGY HOODIE GEOMETRY (#1c1c1e)
  * - Ectomorphic narrow sloped shoulders, rounded kyphotic upper back (slouch)
