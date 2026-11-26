@@ -175,7 +175,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const JAW_TAPER = 0.42;
   const CHIN_FACET_FALLOFF = 1.5;
   // Насколько подбородок выдвигается вперёд у кончика
-  const CHIN_FORWARD = 0.062;
+  const CHIN_FORWARD = 0.03;
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
