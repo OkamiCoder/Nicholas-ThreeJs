@@ -129,15 +129,17 @@ export function App() {
       <div className="relative flex-1 flex overflow-hidden">
         {/* 3D VIEWPORT */}
         <div className="relative flex-1 h-full">
-          <NicholasViewport
-            textures={textures}
-            settings={settings}
-            activePreset={activePreset}
-            selectedPinId={selectedPinId}
-            onSelectPin={setSelectedPinId}
-            onStatsReady={handleStatsReady}
-            sparkTriggerCount={sparkTriggerCount}
-          />
+          <ViewportErrorBoundary>
+            <NicholasViewport
+              textures={textures}
+              settings={settings}
+              activePreset={activePreset}
+              selectedPinId={selectedPinId}
+              onSelectPin={setSelectedPinId}
+              onStatsReady={handleStatsReady}
+              sparkTriggerCount={sparkTriggerCount}
+            />
+          </ViewportErrorBoundary>
 
           {/* TOP-LEFT CAMERA PRESET BAR */}
           <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5 max-w-[calc(100%-24px)]">
