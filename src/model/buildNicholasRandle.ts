@@ -140,18 +140,14 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
  *    sharp triangular nose, angular pointed chin)
  */
 /**
- * 1. HEAD GEOMETRY — естественный череп, слегка уплощённый сверху и сзади.
- *    Ширина/глубина сохранены, чтобы волосы, уши, нос и родинка совпадали.
- *    UV и текстуры не меняются.
- */
 /**
- * 1. HEAD GEOMETRY — плоское лицо, чёткая линия челюсти, без выпирающего носа.
- *    Ширина/глубина сохранены (волосы, уши, нос, родинка совпадают).
- *    UV-развёртка не меняется — текстуры остаются на месте.
+ * 1. HEAD GEOMETRY — естественный череп.
+ *    Лицо уплощено (не выпирает дальше чёлки), подбородок укорочен.
+ *    UV считается от исходной высоты — текстуры остаются на месте.
  */
 function buildHeadGeometry(): THREE.BufferGeometry {
-  const radialSegs = 20;
-  const heightSegs = 16;
+  const radialSegs = 16;
+  const heightSegs = 14;
   const geo = new THREE.SphereGeometry(1, radialSegs, heightSegs);
 
   const pos = geo.attributes.position;
@@ -162,118 +158,120 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const halfH = 0.113;
   const halfD = 0.092;
 
+  // Насколько прижимаем переднюю полусферу лица (плавно, без шва на nz = 0)
+  const FACE_FLATTEN = 0.10;
+  // Точка сжатия — сразу под нижней губой; ниже неё челюсть укорачивается
+  const CHIN_PIVOT_NY = -0.40;
+  const CHIN_SCALE = 0.45;
+
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
-    const nx = v.x;
-    const ny = v.y;
-    const nz = v.z;
+    const nx = v.x; // -1..1
+    const ny = v.y; // -1 (подбородок) .. +1 (макушка)
+    const nz = v.z; // -1 (затылок) .. +1 (лицо)
 
-    // 1. ЛИНИЯ ЧЕЛЮСТИ: сечение нижней трети превращаем из эллипса
-    //    в скруглённый прямоугольник — появляются чёткие углы челюсти.
-    let sx = nx;
-    let sz = nz;
-    if (ny < 0.06) {
-      const jawT = THREE.MathUtils.clamp((0.06 - ny) / 0.8, 0, 1);
-      const r = Math.hypot(nx, nz);
-      if (r > 1e-6) {
-        const c = nx / r;
-        const s = nz / r;
-        const p = 2 + jawT * 2.2;
-        const k = Math.pow(Math.pow(Math.abs(c), p) + Math.pow(Math.abs(s), p), -1 / p);
-        const blend = jawT * 0.72;
-        sx = nx + (c * k * r - nx) * blend;
-        sz = nz + (s * k * r - nz) * blend;
-      }
-    }
-
-    let x = sx * halfW;
+    let x = nx * halfW;
     let y = ny * halfH;
-    let z = sz * halfD;
+    let z = nz * halfD;
 
-    // 2. ПЛОСКОЕ ЛИЦО: убираем сферическую выпуклость фронтальной части.
-    if (sz > 0) {
-      const w = THREE.MathUtils.clamp(sz, 0, 1);
-      const flatZ = halfD * (0.72 + 0.28 * sz);
-      z = halfD * sz * (1 - w) + flatZ * w;
-    }
-
-    // 3. Макушка: округлая, слегка прижатая сверху.
+    // 1. Макушка: округлая, слегка уплощённая сверху.
     if (ny > 0.2) {
       const t = (ny - 0.2) / 0.8;
-      x *= 1 - t * t * 0.1;
-      z *= 1 - t * t * 0.05;
+      x *= 1.0 - t * t * 0.10;
+      z *= 1.0 - t * t * 0.05;
       if (ny > 0.85) {
-        y -= (ny - 0.85) * halfH * 0.3;
+        y -= (ny - 0.85) * halfH * 0.30;
       }
     }
 
-    // 4. Плоский затылок.
+    // 2. Затылок плоский, без горба.
     if (nz < -0.2 && ny > -0.2) {
       z *= 0.93;
     }
 
-    // 5. Сужение челюсти к подбородку + фаска подбородка.
-    if (ny < 0.06) {
-      const lowerT = THREE.MathUtils.clamp((0.06 - ny) / 1.06, 0, 1);
-      x *= 1 - Math.pow(lowerT, 1.25) * 0.46;
+    // 3. ЛИЦО НЕ ВЫПИРАЕТ: мягко прижимаем всю переднюю полусферу,
+    //    чтобы лоб, брови и щёки оставались позади чёлки.
+    if (nz > 0) {
+      z *= 1.0 - FACE_FLATTEN * nz;
+    }
 
-      if (sz > 0) {
-        const centerProximity = Math.max(0, 1 - Math.abs(sx) * 1.7);
-        z *= 0.88 + centerProximity * 0.12;
-        if (ny < -0.62) {
-          z += centerProximity * 0.006;
-          y -= centerProximity * 0.004;
+    // 4. Челюсть: естественное сужение к подбородку.
+    if (ny < 0.05) {
+      const lowerT = Math.min(1, (0.05 - ny) / 1.05);
+      const jawNarrow = 1.0 - Math.pow(lowerT, 1.2) * 0.50;
+      x *= jawNarrow;
+
+      if (nz > 0) {
+        const centerProximity = Math.max(0, 1 - Math.abs(nx) * 1.8);
+        z *= 0.82 + centerProximity * 0.20;
+        if (ny < -0.65) {
+          z += centerProximity * 0.010;
+          y -= centerProximity * 0.006;
+        }
+      } else {
+        z *= 0.60 * (1 - lowerT * 0.30);
+        if (ny < -0.45) {
+          y += (-0.45 - ny) * 0.022;
         }
       }
     }
 
-    // 6. ПОДЧЕЛЮСТНАЯ ПЛОСКОСТЬ: низ головы срезан и поднят к затылку —
-    //    челюсть читается как грань, а не как шар.
-    if (ny < -0.28) {
-      const t = THREE.MathUtils.clamp((-0.28 - ny) / 0.72, 0, 1);
-      const back = THREE.MathUtils.clamp(0.35 - sz * 0.65, 0, 1);
-      y += t * t * halfH * 0.3 * back;
-      z *= 1 - t * back * 0.2;
-    }
-
-    // 7. Впалые щёки.
-    if (sz > 0.1 && ny > -0.58 && ny < 0.02 && Math.abs(sx) > 0.22 && Math.abs(sx) < 0.88) {
-      const cheekYFactor = 1 - Math.abs(ny + 0.26) / 0.32;
-      const cheekXFactor = 1 - Math.abs(Math.abs(sx) - 0.54) / 0.34;
+    // 5. Впалые щёки.
+    if (nz > 0.1 && ny > -0.58 && ny < 0.02 && Math.abs(nx) > 0.22 && Math.abs(nx) < 0.88) {
+      const cheekYFactor = 1.0 - Math.abs(ny + 0.26) / 0.32;
+      const cheekXFactor = 1.0 - Math.abs(Math.abs(nx) - 0.54) / 0.34;
       const hollowAmount = Math.max(0, cheekYFactor) * Math.max(0, cheekXFactor);
-      x *= 1 - hollowAmount * 0.27;
+      x *= 1.0 - hollowAmount * 0.27;
       z -= hollowAmount * 0.014;
     }
 
-    // 8. Скулы.
-    if (sz > 0.15 && ny >= 0 && ny <= 0.18 && Math.abs(sx) > 0.35 && Math.abs(sx) < 0.85) {
+    // 6. Скулы.
+    if (nz > 0.15 && ny >= 0.0 && ny <= 0.18 && Math.abs(nx) > 0.35 && Math.abs(nx) < 0.85) {
       x *= 1.07;
       z += 0.005;
     }
 
-    // 9. Надбровья, глазницы, рот.
-    //    Горб переносицы УДАЛЁН — нос теперь отдельной острой призмой.
-    if (sz > 0.3) {
-      if (ny >= 0.22 && ny <= 0.38 && Math.abs(sx) < 0.72) {
-        z += 0.008 * (1 - Math.abs(sx) * 0.5);
+    // 7. Черты лица.
+    if (nz > 0.3) {
+      // Надбровные дуги — слабые, лоб не выступает past чёлку.
+      if (ny >= 0.22 && ny <= 0.38 && Math.abs(nx) < 0.72) {
+        z += 0.005 * (1 - Math.abs(nx) * 0.5);
       }
-      if (ny >= 0.02 && ny < 0.22 && Math.abs(sx) >= 0.16 && Math.abs(sx) <= 0.68) {
+      // Глубоко посаженные глаза.
+      if (ny >= 0.02 && ny < 0.22 && Math.abs(nx) >= 0.16 && Math.abs(nx) <= 0.68) {
         const socketDepth =
-          (1 - Math.abs(ny - 0.12) / 0.11) * (1 - Math.abs(Math.abs(sx) - 0.4) / 0.28);
+          (1 - Math.abs(ny - 0.12) / 0.11) * (1 - Math.abs(Math.abs(nx) - 0.4) / 0.28);
         if (socketDepth > 0) {
-          z -= socketDepth * 0.017;
+          z -= socketDepth * 0.019;
         }
       }
-      if (Math.abs(sx) < 0.32 && ny >= -0.48 && ny <= -0.34) {
+      // Переносица — только лёгкий рельеф; объём даёт отдельный нос.
+      if (Math.abs(nx) < 0.16 && ny >= -0.24 && ny <= 0.25) {
+        const noseT = 1 - (ny + 0.24) / 0.49;
+        z += 0.003 + Math.sin(noseT * Math.PI * 0.85) * 0.005;
+      }
+      // Борозда рта — точно под нарисованный на текстуре рот.
+      if (Math.abs(nx) < 0.32 && ny >= -0.40 && ny <= -0.26) {
         z -= 0.004;
       }
     }
 
+    // 8. ПОДБОРОДОК БЛИЖЕ К ГУБЕ: укорачиваем нижнюю треть лица.
+    //    Нарисованный рот выше точки сжатия и остаётся на месте.
+    if (ny < CHIN_PIVOT_NY) {
+      const yBase = ny * halfH;
+      const yCompressed =
+        (CHIN_PIVOT_NY + (ny - CHIN_PIVOT_NY) * CHIN_SCALE) * halfH;
+      y += yCompressed - yBase;
+    }
+
     pos.setXYZ(i, x, y, z);
 
+    // UV: v берётся от ИСХОДНОЙ ny — глаза, нос и рот на текстуре не смещаются,
+    // а полоса подбородка просто сжимается в короткий подбородок.
     if (nz >= -0.1) {
       const uCoord = 0.5 + (x / (halfW * 1.05)) * 0.42;
-      const vCoord = 0.5 + (y / (halfH * 1.02)) * 0.45;
+      const vCoord = 0.5 + (ny / 1.02) * 0.45;
       uv.setXY(
         i,
         THREE.MathUtils.clamp(uCoord, 0.02, 0.98),
