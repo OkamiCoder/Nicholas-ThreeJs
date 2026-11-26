@@ -1400,6 +1400,7 @@ export function buildNicholasRandleCharacter(textures: ProceduralTextureSet): Ch
   ANATOMY_PINS[6].cameraTarget = [lighterWorldPos.x, lighterWorldPos.y + 0.02, lighterWorldPos.z - 0.04];
 
   // Build synchronized wireframe overlay & count vertices/triangles
+   // Build synchronized wireframe overlay & count vertices/triangles
   const wireframeOverlayGroup = new THREE.Group();
   wireframeOverlayGroup.visible = false;
   const wireMat = new THREE.MeshBasicMaterial({
@@ -1410,25 +1411,37 @@ export function buildNicholasRandleCharacter(textures: ProceduralTextureSet): Ch
     depthTest: true,
   });
 
-  let totalVertices = 0;
-  let totalTriangles = 0;
-  let totalMeshes = 0;
-
+  // ПРОХОД 1: только собираем меши, граф сцены НЕ меняем.
+  // Добавлять детей внутри traverse() нельзя: новый wireframe-Mesh сам
+  // попадает в обход, получает свой клон — и так до бесконечной рекурсии
+  // (RangeError: Maximum call stack size exceeded).
+  const meshes: THREE.Mesh[] = [];
   root.traverse((obj) => {
     if (obj instanceof THREE.Mesh && obj.geometry) {
-      totalMeshes++;
-      const posAttr = obj.geometry.attributes.position;
-      if (posAttr) {
-        totalVertices += posAttr.count;
-        totalTriangles += Math.floor(posAttr.count / 3);
-      }
-      // Attach wireframe clone directly to each mesh so skeletal breathing animations stay 100% synced
-      const wf = new THREE.Mesh(obj.geometry, wireMat);
-      wf.name = '__wireframe_child';
-      wf.visible = false;
-      obj.add(wf);
+      meshes.push(obj);
     }
   });
+
+  // ПРОХОД 2: считаем статистику и вешаем ровно один wireframe-клон на меш.
+  let totalVertices = 0;
+  let totalTriangles = 0;
+  const totalMeshes = meshes.length;
+
+  for (const mesh of meshes) {
+    const geo = mesh.geometry;
+    const posAttr = geo.attributes.position;
+    if (posAttr) {
+      totalVertices += posAttr.count;
+      // Для индексированной геометрии (родинка-PlaneGeometry) считаем
+      // треугольники по индексу, а не по числу вершин.
+      totalTriangles += Math.floor((geo.index ? geo.index.count : posAttr.count) / 3);
+    }
+    // Attach wireframe clone directly to each mesh so skeletal breathing animations stay 100% synced
+    const wf = new THREE.Mesh(geo, wireMat);
+    wf.name = '__wireframe_child';
+    wf.visible = false;
+    mesh.add(wf);
+  }
 
   // Update ANATOMY_PINS[6] to match the right hand / lighter position (-0.05, 1.34, 0.26)
   ANATOMY_PINS[6].position = [-0.045, 1.35, 0.27];
