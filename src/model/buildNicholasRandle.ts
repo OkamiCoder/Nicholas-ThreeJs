@@ -126,9 +126,7 @@ export const ANATOMY_PINS: AnatomyPin[] = [
   },
 ];
 
-/**
- * Helper to finalize a BufferGeometry for crisp GoldSrc/PS2 flat shading
- */
+
 function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
   const nonIndexed = geo.index ? geo.toNonIndexed() : geo;
   nonIndexed.computeVertexNormals();
@@ -136,10 +134,6 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
 }
 
 
- /* 1. HEAD GEOMETRY — естественный череп.
- *    Лицо уплощено. Подбородок удлинён и выдвинут вперёд (не рецессирован).
- *    UV считается от исходной высоты — текстуры остаются на месте.
- */
 function buildHeadGeometry(): THREE.BufferGeometry {
   const radialSegs = 16;
   const heightSegs = 14;
@@ -278,10 +272,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   return finalizeFlatGeometry(geo);
 }
 
-/**
- * Острый треугольный нос, посаженный на уплощённое лицо.
- * Основание утоплено в голову, кончик не выступает дальше чёлки.
- */
+
 function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
 
@@ -319,11 +310,7 @@ function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   geo.computeVertexNormals();
   return geo;
 }
-/**
- * Многослойные угольно-чёрные пряди. Чёлка выдвинута вперёд и удлинена,
- * чтобы перекрывать почти всё лицо (лоб, глаза, нос), оставляя видимыми
- * рот и подбородок ниже.
- */
+
 function buildHairGroup(hairMat: THREE.Material): THREE.Group {
   const hairGroup = new THREE.Group();
 
