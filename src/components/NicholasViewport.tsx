@@ -472,8 +472,34 @@ export const NicholasViewport: React.FC<NicholasViewportProps> = ({
     return () => {
       cancelAnimationFrame(animFrameId);
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       controls.removeEventListener('start', stopAutoCamera);
       controls.dispose();
+
+      // Освобождаем GPU-ресурсы (важно при двойном монтировании в StrictMode).
+      // Геометрия общая у меша и его wireframe-клона — Set защищает от двойного dispose.
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      scene.traverse((obj) => {
+        if (
+          obj instanceof THREE.Mesh ||
+          obj instanceof THREE.Points ||
+          obj instanceof THREE.Line
+        ) {
+          if (obj.geometry) geometries.add(obj.geometry);
+          const mat = obj.material;
+          if (Array.isArray(mat)) mat.forEach((m) => materials.add(m));
+          else if (mat) materials.add(mat);
+        }
+      });
+      geometries.forEach((g) => g.dispose());
+      materials.forEach((m) => {
+        for (const value of Object.values(m)) {
+          if (value instanceof THREE.Texture) value.dispose();
+        }
+        m.dispose();
+      });
+
       renderer.dispose();
       if (renderer.domElement.parentNode === container) {
         container.removeChild(renderer.domElement);
