@@ -172,10 +172,10 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const FACE_FLATTEN = 0.10;
   const CHIN_PIVOT_NY = -0.40;
   const CHIN_SCALE = 0.64;
-  const JAW_TAPER = 0.42;
+  const JAW_TAPER = 0.32;
   const CHIN_FACET_FALLOFF = 1.5;
   // Насколько подбородок выдвигается вперёд у кончика
-  const CHIN_FORWARD = 0.03;
+  const CHIN_FORWARD = 0.04;
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
@@ -231,12 +231,13 @@ function buildHeadGeometry(): THREE.BufferGeometry {
     }
 
     // 5. Впалые щёки.
+    // 5. Лёгкая рельефность щёк (впалость сильно уменьшена).
     if (nz > 0.1 && ny > -0.58 && ny < 0.02 && Math.abs(nx) > 0.22 && Math.abs(nx) < 0.88) {
       const cheekYFactor = 1.0 - Math.abs(ny + 0.26) / 0.32;
       const cheekXFactor = 1.0 - Math.abs(Math.abs(nx) - 0.54) / 0.34;
       const hollowAmount = Math.max(0, cheekYFactor) * Math.max(0, cheekXFactor);
-      x *= 1.0 - hollowAmount * 0.27;
-      z -= hollowAmount * 0.014;
+      x *= 1.0 - hollowAmount * 0.12;
+      z -= hollowAmount * 0.006;
     }
 
     // 6. Скулы.
