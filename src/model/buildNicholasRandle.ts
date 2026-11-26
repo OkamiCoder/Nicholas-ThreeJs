@@ -135,24 +135,8 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
   return nonIndexed;
 }
 
-/**
- * 1. HEAD GEOMETRY (Dolichocephalic skull, sunken cheeks, deep eye sockets,
- *    sharp triangular nose, angular pointed chin)
- */
-/**
-/**
- * 1. HEAD GEOMETRY — естественный череп.
- *    Лицо уплощено (не выпирает дальше чёлки), подбородок укорочен.
- *    UV считается от исходной высоты — текстуры остаются на месте.
- */
-/**
- * 1. HEAD GEOMETRY — естественный череп.
- *    Лицо уплощено (не выпирает дальше чёлки).
- *    Подбородок удлинён и расширен, челюсть стала массивнее.
- *    UV считается от исходной высоты — текстуры остаются на месте.
- */
-/**
- * 1. HEAD GEOMETRY — естественный череп.
+
+ /* 1. HEAD GEOMETRY — естественный череп.
  *    Лицо уплощено. Подбородок удлинён и выдвинут вперёд (не рецессирован).
  *    UV считается от исходной высоты — текстуры остаются на месте.
  */
@@ -295,13 +279,6 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 }
 
 /**
- * Sharp Triangular Low-Poly Nose Prism (high nasal bridge & crisp triangular profile)
- */
-/**
- * Острый низкополигональный нос-призма, посаженный НА плоскость лица.
- * Кончик выступает всего на ~12 мм — без «хобота». UV сохранены.
- */
-/**
  * Острый треугольный нос, посаженный на уплощённое лицо.
  * Основание утоплено в голову, кончик не выступает дальше чёлки.
  */
@@ -342,10 +319,6 @@ function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   geo.computeVertexNormals();
   return geo;
 }
-/**
- * Multi-layered Charcoal-Black (#121214) Sharp Triangular Hair Strands & Asymmetric Bangs
- * Partially covering one eye (covers character's right eye, leaving left eye & mole exposed)
- */
 /**
  * Многослойные угольно-чёрные пряди. Чёлка выдвинута вперёд и удлинена,
  * чтобы перекрывать почти всё лицо (лоб, глаза, нос), оставляя видимыми
