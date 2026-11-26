@@ -346,10 +346,14 @@ function buildTriangularNoseGeometry(): THREE.BufferGeometry {
  * Multi-layered Charcoal-Black (#121214) Sharp Triangular Hair Strands & Asymmetric Bangs
  * Partially covering one eye (covers character's right eye, leaving left eye & mole exposed)
  */
+/**
+ * Многослойные угольно-чёрные пряди. Чёлка выдвинута вперёд и удлинена,
+ * чтобы перекрывать почти всё лицо (лоб, глаза, нос), оставляя видимыми
+ * рот и подбородок ниже.
+ */
 function buildHairGroup(hairMat: THREE.Material): THREE.Group {
   const hairGroup = new THREE.Group();
 
-  // Helper to create a sharp 3D triangular strand blade (slightly curved 2-segment triangle strip)
   const addTriangularStrand = (
     root: [number, number, number],
     mid: [number, number, number],
@@ -368,10 +372,8 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
     const mR = [mid[0] + tx * widthMid, mid[1] + ty * widthMid, mid[2] + tz * widthMid];
 
     const positions = new Float32Array([
-      // Upper quad (2 triangles)
       ...rL, ...mL, ...rR,
       ...rR, ...mL, ...mR,
-      // Sharp triangular tip
       ...mL, ...tip, ...mR,
     ]);
 
@@ -392,14 +394,13 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
     hairGroup.add(mesh);
   };
 
-  // Base low-poly skullcap volume so scalp never shows through between triangular planes
+  // Базовый низкополигональный капюшон-скейлкап
   const capGeo = new THREE.SphereGeometry(0.075, 10, 8);
   const capPos = capGeo.attributes.position;
   for (let i = 0; i < capPos.count; i++) {
     let x = capPos.getX(i) * 1.03;
     let y = capPos.getY(i) * 1.48 + 0.022;
     let z = capPos.getZ(i) * 1.24 - 0.008;
-    // Cut away lower front face area
     if (y < 0.03 && z > 0.01) {
       y = 0.035;
       z *= 0.85;
@@ -413,76 +414,70 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
   capMesh.castShadow = true;
   hairGroup.add(capMesh);
 
-  // LAYER 1 & 2: Asymmetric jagged bangs falling across forehead and partially covering right eye (x < 0)
-  // Strand 1: Deep long bang directly over character's right eye (x = -0.032)
+  // ЧЁЛКА-ЗАВЕСА: выдвинута вперёд и удлинена, перекрывает почти всё лицо.
+  // Прядь над правым глазом (длинная)
   addTriangularStrand(
-    [-0.012, 0.108, 0.062],
-    [-0.032, 0.058, 0.095],
-    [-0.042, 0.002, 0.098], // Drops right across the right eye!
-    0.022,
+    [-0.016, 0.108, 0.062],
+    [-0.034, 0.046, 0.096],
+    [-0.040, -0.032, 0.104],
+    0.024,
     0.016,
     [0.95, 0.1, -0.25]
   );
-
-  // Strand 2: Secondary jagged bang overlapping right brow/temple
+  // Правый висок / бровь
   addTriangularStrand(
-    [-0.036, 0.102, 0.052],
-    [-0.054, 0.052, 0.082],
-    [-0.058, -0.008, 0.078],
-    0.02,
+    [-0.040, 0.102, 0.052],
+    [-0.058, 0.044, 0.090],
+    [-0.062, -0.018, 0.098],
+    0.021,
     0.015,
     [0.82, 0.12, 0.55]
   );
-
-  // Strand 3: Outer right temple spike
+  // Крайняя правая височная прядь (обрамление)
   addTriangularStrand(
-    [-0.055, 0.092, 0.025],
-    [-0.074, 0.04, 0.048],
-    [-0.072, -0.022, 0.044],
+    [-0.058, 0.094, 0.032],
+    [-0.076, 0.036, 0.060],
+    [-0.074, -0.020, 0.076],
     0.019,
     0.013,
     [0.35, 0.1, 0.92]
   );
-
-  // Strand 4: Center-left jagged bang (sweeps diagonally toward right, stops above nasal bridge)
+  // Центральная прядь над носом (самая длинная)
   addTriangularStrand(
-    [0.008, 0.112, 0.064],
-    [-0.008, 0.068, 0.094],
-    [-0.018, 0.026, 0.096],
-    0.02,
-    0.014,
-    [0.98, 0.08, -0.1]
+    [0.004, 0.112, 0.064],
+    [-0.008, 0.050, 0.100],
+    [-0.012, -0.036, 0.106],
+    0.022,
+    0.015,
+    [0.98, 0.08, -0.10]
   );
-
-  // Strand 5: Shorter parted strand over left forehead (leaves left eye & mole under left eye visible!)
+  // Прядь над левым глазом
   addTriangularStrand(
-    [0.026, 0.106, 0.058],
-    [0.036, 0.074, 0.086],
-    [0.044, 0.046, 0.088],
-    0.018,
-    0.012,
+    [0.028, 0.108, 0.060],
+    [0.038, 0.046, 0.094],
+    [0.042, -0.030, 0.102],
+    0.023,
+    0.015,
     [0.92, -0.15, -0.35]
   );
-
-  // Strand 6: Left temple sideburn/framing strand (outside left eye)
+  // Левая височная прядь (обрамление)
   addTriangularStrand(
-    [0.052, 0.094, 0.032],
-    [0.072, 0.042, 0.054],
-    [0.071, -0.018, 0.048],
-    0.018,
+    [0.056, 0.096, 0.038],
+    [0.074, 0.038, 0.066],
+    [0.072, -0.016, 0.080],
+    0.019,
     0.013,
     [0.35, 0.1, -0.92]
   );
 
-  // LAYER 3: Crown, sides & back messy triangular hair spikes (GoldSrc / Cry of Fear silhouette)
+  // Слой 3: макушка, бока и затылок — растрёпанные шипы
   const perimeterSpikes = 14;
   for (let i = 0; i < perimeterSpikes; i++) {
-    const angle = (i / perimeterSpikes) * Math.PI * 1.45 + Math.PI * 0.78; // Sides and back arc
+    const angle = (i / perimeterSpikes) * Math.PI * 1.45 + Math.PI * 0.78;
     const sinA = Math.sin(angle);
     const cosA = Math.cos(angle);
     const tangent: [number, number, number] = [cosA, 0, -sinA];
 
-    // Upper layer strand
     addTriangularStrand(
       [sinA * 0.042, 0.118, cosA * 0.052 - 0.006],
       [sinA * 0.078, 0.064, cosA * 0.094 - 0.01],
@@ -492,7 +487,6 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
       tangent
     );
 
-    // Lower nape / ear-level jagged layer
     addTriangularStrand(
       [sinA * 0.062, 0.055, cosA * 0.076 - 0.008],
       [sinA * 0.076, -0.008, cosA * 0.096 - 0.012],
@@ -503,7 +497,7 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
     );
   }
 
-  // Top messy crown jagged tufts
+  // Верхние растрёпанные пучки
   addTriangularStrand(
     [-0.01, 0.122, -0.01],
     [-0.035, 0.134, 0.025],
