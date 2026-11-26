@@ -497,6 +497,7 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
       tangent
     );
   }
+  
   // Верхние растрёпанные пучки (выдвинуты наружу на +0.014 вдоль своего направления)
   addTriangularStrand(
     [-0.024, 0.122, -0.024],
@@ -514,6 +515,8 @@ function buildHairGroup(hairMat: THREE.Material): THREE.Group {
     0.014,
     [0.85, 0.1, -0.5]
   );
+  return hairGroup;
+}
 /**
  * 2. TORSO & BAGGY HOODIE GEOMETRY (#1c1c1e)
  * - Ectomorphic narrow sloped shoulders, rounded kyphotic upper back (slouch)
