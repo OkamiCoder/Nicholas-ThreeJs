@@ -274,6 +274,8 @@ export const NicholasViewport: React.FC<NicholasViewportProps> = ({
     scene.add(sparkPoints);
 
     // Resize observer
+        // Resize observer: следим и за окном, и за самим контейнером —
+    // его ширина меняется при скрытии/показе правой панели без resize окна.
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth;
@@ -283,6 +285,8 @@ export const NicholasViewport: React.FC<NicholasViewportProps> = ({
       renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
 
     // Animation loop variables
     const clock = new THREE.Clock();
