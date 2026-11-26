@@ -151,6 +151,11 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
  *    Подбородок удлинён и расширен, челюсть стала массивнее.
  *    UV считается от исходной высоты — текстуры остаются на месте.
  */
+/**
+ * 1. HEAD GEOMETRY — естественный череп.
+ *    Лицо уплощено. Подбородок удлинён и выдвинут вперёд (не рецессирован).
+ *    UV считается от исходной высоты — текстуры остаются на месте.
+ */
 function buildHeadGeometry(): THREE.BufferGeometry {
   const radialSegs = 16;
   const heightSegs = 14;
@@ -164,15 +169,13 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const halfH = 0.113;
   const halfD = 0.092;
 
-  // Насколько прижимаем переднюю полусферу лица (плавно, без шва на nz = 0)
   const FACE_FLATTEN = 0.10;
-  // Точка сжатия — сразу под нижней губой; ниже неё челюсть укорачивается
   const CHIN_PIVOT_NY = -0.40;
-  const CHIN_SCALE = 0.58;
-  // Насколько челюсть сужается к подбородку (меньше = шире подбородок)
+  const CHIN_SCALE = 0.64;
   const JAW_TAPER = 0.42;
-  // Ширина фаски подбородка (меньше = более плоский, широкий подбородок)
   const CHIN_FACET_FALLOFF = 1.5;
+  // Насколько подбородок выдвигается вперёд у кончика
+  const CHIN_FORWARD = 0.062;
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
@@ -199,13 +202,12 @@ function buildHeadGeometry(): THREE.BufferGeometry {
       z *= 0.93;
     }
 
-    // 3. ЛИЦО НЕ ВЫПИРАЕТ: мягко прижимаем всю переднюю полусферу,
-    //    чтобы лоб, брови и щёки оставались позади чёлки.
+    // 3. Лицо не выпирает: мягко прижимаем переднюю полусферу.
     if (nz > 0) {
       z *= 1.0 - FACE_FLATTEN * nz;
     }
 
-    // 4. Челюсть: широкое, естественное сужение к подбородку.
+    // 4. Челюсть: сужение к подбородку + выдвижение подбородка вперёд.
     if (ny < 0.05) {
       const lowerT = Math.min(1, (0.05 - ny) / 1.05);
       const jawNarrow = 1.0 - Math.pow(lowerT, 1.2) * JAW_TAPER;
@@ -213,9 +215,11 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
       if (nz > 0) {
         const centerProximity = Math.max(0, 1 - Math.abs(nx) * CHIN_FACET_FALLOFF);
-        z *= 0.82 + centerProximity * 0.20;
+        z *= 0.86 + centerProximity * 0.18;
         if (ny < -0.65) {
-          z += centerProximity * 0.010;
+          // Сильный подбородок: выдвигаем вперёд, чтобы не был скошен назад.
+          const chinT = Math.min(1, (-0.65 - ny) / 0.33);
+          z += centerProximity * chinT * CHIN_FORWARD;
           y -= centerProximity * 0.006;
         }
       } else {
@@ -243,11 +247,9 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
     // 7. Черты лица.
     if (nz > 0.3) {
-      // Надбровные дуги — слабые, лоб не выступает дальше чёлки.
       if (ny >= 0.22 && ny <= 0.38 && Math.abs(nx) < 0.72) {
         z += 0.005 * (1 - Math.abs(nx) * 0.5);
       }
-      // Глубоко посаженные глаза.
       if (ny >= 0.02 && ny < 0.22 && Math.abs(nx) >= 0.16 && Math.abs(nx) <= 0.68) {
         const socketDepth =
           (1 - Math.abs(ny - 0.12) / 0.11) * (1 - Math.abs(Math.abs(nx) - 0.4) / 0.28);
@@ -255,19 +257,16 @@ function buildHeadGeometry(): THREE.BufferGeometry {
           z -= socketDepth * 0.019;
         }
       }
-      // Переносица — только лёгкий рельеф; объём даёт отдельный нос.
       if (Math.abs(nx) < 0.16 && ny >= -0.24 && ny <= 0.25) {
         const noseT = 1 - (ny + 0.24) / 0.49;
         z += 0.003 + Math.sin(noseT * Math.PI * 0.85) * 0.005;
       }
-      // Борозда рта — точно под нарисованный на текстуре рот.
       if (Math.abs(nx) < 0.32 && ny >= -0.40 && ny <= -0.26) {
         z -= 0.004;
       }
     }
 
-    // 8. Длина подбородка: нижняя треть лица сжимается от точки под губой.
-    //    Нарисованный рот выше точки сжатия и остаётся на месте.
+    // 8. Длина подбородка: сжатие нижней трети лица от точки под губой.
     if (ny < CHIN_PIVOT_NY) {
       const yBase = ny * halfH;
       const yCompressed =
@@ -277,7 +276,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
     pos.setXYZ(i, x, y, z);
 
-    // UV: v берётся от ИСХОДНОЙ ny — глаза, нос и рот на текстуре не смещаются.
+    // UV: v от ИСХОДНОЙ ny — глаза, нос и рот на текстуре не смещаются.
     if (nz >= -0.1) {
       const uCoord = 0.5 + (x / (halfW * 1.05)) * 0.42;
       const vCoord = 0.5 + (ny / 1.02) * 0.45;
