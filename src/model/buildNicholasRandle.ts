@@ -145,6 +145,12 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
  *    Лицо уплощено (не выпирает дальше чёлки), подбородок укорочен.
  *    UV считается от исходной высоты — текстуры остаются на месте.
  */
+/**
+ * 1. HEAD GEOMETRY — естественный череп.
+ *    Лицо уплощено (не выпирает дальше чёлки).
+ *    Подбородок удлинён и расширен, челюсть стала массивнее.
+ *    UV считается от исходной высоты — текстуры остаются на месте.
+ */
 function buildHeadGeometry(): THREE.BufferGeometry {
   const radialSegs = 16;
   const heightSegs = 14;
@@ -162,7 +168,11 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const FACE_FLATTEN = 0.10;
   // Точка сжатия — сразу под нижней губой; ниже неё челюсть укорачивается
   const CHIN_PIVOT_NY = -0.40;
-  const CHIN_SCALE = 0.55;
+  const CHIN_SCALE = 0.58;
+  // Насколько челюсть сужается к подбородку (меньше = шире подбородок)
+  const JAW_TAPER = 0.42;
+  // Ширина фаски подбородка (меньше = более плоский, широкий подбородок)
+  const CHIN_FACET_FALLOFF = 1.5;
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
@@ -195,14 +205,14 @@ function buildHeadGeometry(): THREE.BufferGeometry {
       z *= 1.0 - FACE_FLATTEN * nz;
     }
 
-    // 4. Челюсть: естественное сужение к подбородку.
+    // 4. Челюсть: широкое, естественное сужение к подбородку.
     if (ny < 0.05) {
       const lowerT = Math.min(1, (0.05 - ny) / 1.05);
-      const jawNarrow = 1.0 - Math.pow(lowerT, 1.2) * 0.50;
+      const jawNarrow = 1.0 - Math.pow(lowerT, 1.2) * JAW_TAPER;
       x *= jawNarrow;
 
       if (nz > 0) {
-        const centerProximity = Math.max(0, 1 - Math.abs(nx) * 1.8);
+        const centerProximity = Math.max(0, 1 - Math.abs(nx) * CHIN_FACET_FALLOFF);
         z *= 0.82 + centerProximity * 0.20;
         if (ny < -0.65) {
           z += centerProximity * 0.010;
@@ -233,7 +243,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
     // 7. Черты лица.
     if (nz > 0.3) {
-      // Надбровные дуги — слабые, лоб не выступает past чёлку.
+      // Надбровные дуги — слабые, лоб не выступает дальше чёлки.
       if (ny >= 0.22 && ny <= 0.38 && Math.abs(nx) < 0.72) {
         z += 0.005 * (1 - Math.abs(nx) * 0.5);
       }
@@ -256,7 +266,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
       }
     }
 
-    // 8. ПОДБОРОДОК БЛИЖЕ К ГУБЕ: укорачиваем нижнюю треть лица.
+    // 8. Длина подбородка: нижняя треть лица сжимается от точки под губой.
     //    Нарисованный рот выше точки сжатия и остаётся на месте.
     if (ny < CHIN_PIVOT_NY) {
       const yBase = ny * halfH;
@@ -267,8 +277,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
     pos.setXYZ(i, x, y, z);
 
-    // UV: v берётся от ИСХОДНОЙ ny — глаза, нос и рот на текстуре не смещаются,
-    // а полоса подбородка просто сжимается в короткий подбородок.
+    // UV: v берётся от ИСХОДНОЙ ny — глаза, нос и рот на текстуре не смещаются.
     if (nz >= -0.1) {
       const uCoord = 0.5 + (x / (halfW * 1.05)) * 0.42;
       const vCoord = 0.5 + (ny / 1.02) * 0.45;
