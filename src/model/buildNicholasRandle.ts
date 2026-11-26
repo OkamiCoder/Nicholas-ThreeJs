@@ -162,7 +162,7 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const FACE_FLATTEN = 0.10;
   // Точка сжатия — сразу под нижней губой; ниже неё челюсть укорачивается
   const CHIN_PIVOT_NY = -0.40;
-  const CHIN_SCALE = 0.52;
+  const CHIN_SCALE = 0.55;
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
