@@ -6,6 +6,7 @@ import {
 } from './components/NicholasViewport';
 import { ANATOMY_PINS, CharacterRig } from './model/buildNicholasRandle';
 import { generateAllProceduralTextures } from './textures/proceduralTextures';
+import { ViewportErrorBoundary } from './components/ViewportErrorBoundary';
 
 const CAMERA_BUTTONS: { id: CameraPresetId; label: string; short: string }[] = [
   { id: 'full', label: '1. Полный рост (1.75м)', short: 'Рост' },
