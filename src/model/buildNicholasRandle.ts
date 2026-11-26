@@ -290,31 +290,30 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 /**
  * Sharp Triangular Low-Poly Nose Prism (high nasal bridge & crisp triangular profile)
  */
+/**
+ * Острый низкополигональный нос-призма, посаженный НА плоскость лица.
+ * Кончик выступает всего на ~12 мм — без «хобота». UV сохранены.
+ */
 function buildTriangularNoseGeometry(): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
-  // Vertices in head local space:
-  // Bridge top (glabella), dorsum mid, sharp tip, left wing, right wing, subnasale (base)
-  const BTop = [0.0, 0.032, 0.084];
-  const BLeft = [-0.009, 0.026, 0.074];
-  const BRight = [0.009, 0.026, 0.074];
-  const Tip = [0.0, -0.022, 0.112]; // High sharp triangular projection
-  const WingL = [-0.013, -0.025, 0.082]; // Viewer left (char right)
-  const WingR = [0.013, -0.025, 0.082]; // Viewer right (char left)
-  const Base = [0.0, -0.033, 0.084];
+
+  const BTop = [0.0, 0.03, 0.0955];
+  const BLeft = [-0.0085, 0.024, 0.093];
+  const BRight = [0.0085, 0.024, 0.093];
+  const Tip = [0.0, -0.02, 0.1035];
+  const WingL = [-0.0115, -0.0245, 0.0905];
+  const WingR = [0.0115, -0.0245, 0.0905];
+  const Base = [0.0, -0.0315, 0.09];
 
   const positions = new Float32Array([
-    // Left side wall (viewer left)
     ...BTop, ...BLeft, ...Tip,
     ...BLeft, ...WingL, ...Tip,
-    // Right side wall (viewer right)
     ...BTop, ...Tip, ...BRight,
     ...BRight, ...Tip, ...WingR,
-    // Underside nostrils triangle
     ...Tip, ...WingL, ...Base,
     ...Tip, ...Base, ...WingR,
   ]);
 
-  // Map UVs to nose bridge / nostril area of faceTexture
   const uvs = new Float32Array([
     0.5, 0.66, 0.45, 0.65, 0.5, 0.47,
     0.45, 0.65, 0.44, 0.46, 0.5, 0.47,
