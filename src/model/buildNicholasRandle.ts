@@ -139,8 +139,12 @@ function finalizeFlatGeometry(geo: THREE.BufferGeometry): THREE.BufferGeometry {
  * 1. HEAD GEOMETRY (Dolichocephalic skull, sunken cheeks, deep eye sockets,
  *    sharp triangular nose, angular pointed chin)
  */
+/**
+ * 1. HEAD GEOMETRY — естественный череп, слегка уплощённый сверху и сзади.
+ *    Ширина/глубина сохранены, чтобы волосы, уши, нос и родинка совпадали.
+ *    UV и текстуры не меняются.
+ */
 function buildHeadGeometry(): THREE.BufferGeometry {
-  // Base segmented sphere modified vertex-by-vertex
   const radialSegs = 16;
   const heightSegs = 14;
   const geo = new THREE.SphereGeometry(1, radialSegs, heightSegs);
@@ -149,79 +153,80 @@ function buildHeadGeometry(): THREE.BufferGeometry {
   const uv = geo.attributes.uv;
   const v = new THREE.Vector3();
 
-  // Head dimensions: height ~ 0.235m, narrow width (X), elongated vertical (Y)
-  const halfW = 0.072; // narrow dolichocephalic skull width
-  const halfH = 0.118; // total skull height = 0.236m (~0.23 ratio)
-  const halfD = 0.092; // cranium depth
+  // Пропорции: чуть ниже прежнего (площе), ширина и глубина без изменений.
+  const halfW = 0.072; // ширина черепа (как было — уши/волосы совпадают)
+  const halfH = 0.113; // высота черепа (слегка уменьшена -> более плоский)
+  const halfD = 0.092; // глубина черепа (как было — нос/родинка совпадают)
 
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
     const nx = v.x; // -1..1
-    const ny = v.y; // -1 (chin) .. +1 (crown)
-    const nz = v.z; // -1 (occiput) .. +1 (face front)
+    const ny = v.y; // -1 (подбородок) .. +1 (макушка)
+    const nz = v.z; // -1 (затылок) .. +1 (лицо)
 
     let x = nx * halfW;
     let y = ny * halfH;
     let z = nz * halfD;
 
-    // 1. Dolichocephalic vertical elongation & high narrow cranium
+    // 1. Макушка: округлая, слегка уплощённая сверху — без прежнего «яйца».
     if (ny > 0.2) {
-      x *= 0.94 - (ny - 0.2) * 0.12;
-      z *= 1.03;
-      if (nz < 0) {
-        // Prominent occiput at upper back of skull
-        z -= (1 - Math.abs(ny - 0.35)) * 0.012;
+      const t = (ny - 0.2) / 0.8; // 0..1 к макушке
+      // Мягкое сужение кверху (гораздо слабее прежнего).
+      x *= 1.0 - t * t * 0.10;
+      z *= 1.0 - t * t * 0.05;
+      // Немного прижимаем самые верхние вершины -> плоская макушка.
+      if (ny > 0.85) {
+        y -= (ny - 0.85) * halfH * 0.30;
       }
     }
 
-    // 2. Strong tapering of the lower face toward a pointed, angular chin
+    // 2. Затылок: более плоский, без выпяченного горба.
+    if (nz < -0.2 && ny > -0.2) {
+      z *= 0.93;
+    }
+
+    // 3. Челюсть: естественное сужение к подбородку (мягче прежнего).
     if (ny < 0.05) {
-      const lowerT = Math.min(1, (0.05 - ny) / 1.05); // 0 at mid-face -> 1 at bottom of chin
-      // Narrow jaw strongly toward the chin point
-      const jawNarrow = 1.0 - Math.pow(lowerT, 1.15) * 0.66;
+      const lowerT = Math.min(1, (0.05 - ny) / 1.05);
+      // Было 0.66 -> подбородок слишком острый; теперь 0.50.
+      const jawNarrow = 1.0 - Math.pow(lowerT, 1.2) * 0.50;
       x *= jawNarrow;
 
       if (nz > 0) {
-        // Bring front jaw slightly forward to form an angular chin point, while sides recede
         const centerProximity = Math.max(0, 1 - Math.abs(nx) * 1.8);
-        z *= 0.78 + centerProximity * 0.26;
+        z *= 0.82 + centerProximity * 0.20;
         if (ny < -0.65) {
-          // Pointed angular chin prominence
-          z += centerProximity * 0.012;
-          y -= centerProximity * 0.008;
+          z += centerProximity * 0.010;
+          y -= centerProximity * 0.006;
         }
       } else {
-        // Under-jaw / submental tuck
-        z *= 0.55 * (1 - lowerT * 0.35);
+        z *= 0.60 * (1 - lowerT * 0.30);
         if (ny < -0.45) {
-          y += ( -0.45 - ny ) * 0.025;
+          y += (-0.45 - ny) * 0.022;
         }
       }
     }
 
-    // 3. Sunken / hollow cheeks (сдвинь вершины внутрь в области щёк)
+    // 4. Впалые щёки — без изменений (совпадают с текстурой).
     if (nz > 0.1 && ny > -0.58 && ny < 0.02 && Math.abs(nx) > 0.22 && Math.abs(nx) < 0.88) {
       const cheekYFactor = 1.0 - Math.abs(ny + 0.26) / 0.32;
       const cheekXFactor = 1.0 - Math.abs(Math.abs(nx) - 0.54) / 0.34;
       const hollowAmount = Math.max(0, cheekYFactor) * Math.max(0, cheekXFactor);
-      // Push vertices inward on X and Z to carve concave hollow cheeks
       x *= 1.0 - hollowAmount * 0.27;
       z -= hollowAmount * 0.014;
     }
 
-    // 4. Cheekbone (zygomatic) angular ridge right above the sunken cheek
+    // 5. Скулы — без изменений.
     if (nz > 0.15 && ny >= 0.0 && ny <= 0.18 && Math.abs(nx) > 0.35 && Math.abs(nx) < 0.85) {
       x *= 1.07;
       z += 0.005;
     }
 
-    // 5. Moderate brow ridges & deeply recessed eye sockets
+    // 6. Надбровья, глазницы, нос, рот — те же зоны, чтобы текстура совпадала.
     if (nz > 0.3) {
-      // Brow ridge overhang (ny around 0.24..0.38)
       if (ny >= 0.22 && ny <= 0.38 && Math.abs(nx) < 0.72) {
         z += 0.011 * (1 - Math.abs(nx) * 0.5);
       }
-      // Deep-set eye sockets (ny around 0.04..0.21, |nx| around 0.20..0.64)
       if (ny >= 0.02 && ny < 0.22 && Math.abs(nx) >= 0.16 && Math.abs(nx) <= 0.68) {
         const socketDepth =
           (1 - Math.abs(ny - 0.12) / 0.11) * (1 - Math.abs(Math.abs(nx) - 0.4) / 0.28);
@@ -229,12 +234,10 @@ function buildHeadGeometry(): THREE.BufferGeometry {
           z -= socketDepth * 0.019;
         }
       }
-      // High nasal bridge along center line (|nx| < 0.16, ny from -0.22 to 0.24)
       if (Math.abs(nx) < 0.16 && ny >= -0.24 && ny <= 0.25) {
-        const noseT = 1 - (ny + 0.24) / 0.49; // 0 at bridge top, 1 at nose tip
+        const noseT = 1 - (ny + 0.24) / 0.49;
         z += 0.012 + Math.sin(noseT * Math.PI * 0.85) * 0.016;
       }
-      // Recessed gloomy mouth groove (ny around -0.45..-0.35, |nx| < 0.32)
       if (Math.abs(nx) < 0.32 && ny >= -0.48 && ny <= -0.34) {
         z -= 0.005;
       }
@@ -242,14 +245,12 @@ function buildHeadGeometry(): THREE.BufferGeometry {
 
     pos.setXYZ(i, x, y, z);
 
-    // Planar front-projected UV for the face so the 128x128 pixel canvas lines up with zero seam warping
+    // UV — та же формула, текстура остаётся на месте.
     if (nz >= -0.1) {
       const uCoord = 0.5 + (x / (halfW * 1.05)) * 0.42;
-      // Map y from [+halfH .. -halfH] to canvas v [0.95 .. 0.05]
       const vCoord = 0.5 + (y / (halfH * 1.02)) * 0.45;
       uv.setXY(i, THREE.MathUtils.clamp(uCoord, 0.02, 0.98), THREE.MathUtils.clamp(vCoord, 0.02, 0.98));
     } else {
-      // Back of head uses peripheral skin tone region of canvas
       uv.setXY(i, 0.08, 0.85);
     }
   }
